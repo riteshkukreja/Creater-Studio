@@ -1,0 +1,26 @@
+{
+  "name": "createrstudio",
+  "version": "1.0.0",
+  "description": "A photoshop clone app for photo manipulation",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack",
+    "watch": "webpack --watch"
+  },
+  "author": "Ritesh Kukreja",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jquery": "^3.2.18",
+    "@types/jqueryui": "^1.12.1",
+    "ts-loader": "^3.3.1",
+    "typescript": "^2.5.3",
+    "webpack": "^3.10.0"
+  },
+  "dependencies": {
+    "commonjs": "0.0.1",
+    "jquery": "^3.3.1",
+    "jquery-ui": "^1.12.1",
+    "jquery-ui-bundle": "^1.12.1-migrate"
+  }
+}
