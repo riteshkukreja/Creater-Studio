@@ -2,7 +2,7 @@ import { BrushLoaderModule } from "../ui/loaders/BrushLoader";
 import { ColorLoaderModule } from "../ui/loaders/ColorLoader";
 import { MainBoard } from "../ui/Board";
 import { Layer } from "../components/Layer";
-import { LayerManagerModule } from "../managers/LayerManager";
+import { LayerManager } from "../managers/LayerManager";
 import { DownloadBtn } from "../scripts/buttons";
 import * as $ from 'jquery';
 
@@ -94,7 +94,7 @@ export const ModuleLoader = (function() {
         MainBoard.resize(window.innerWidth, window.innerHeight - 50);
     
         /**********************Layers**************************/
-        LayerManagerModule.add(new Layer("background"));
+        LayerManager.singleton().add(new Layer("background"));
     }
     
     let showProgress = function(): number {

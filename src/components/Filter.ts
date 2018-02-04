@@ -1,11 +1,13 @@
 import * as $ from 'jquery';
+import { IEventMessageItem, EventMessageItem } from '../interfaces/EventMessageItem';
+import { IClonableItem } from '../interfaces/IClonableItem';
 
-export class Filter {
+export class Filter extends EventMessageItem implements IClonableItem<Filter> {
     private content: string|null = null;
     private name: string;
-    private id: string|null = null;
     
     constructor(name: string) {
+        super();
         this.name = name;
     }
 
@@ -35,11 +37,15 @@ export class Filter {
         this.content = con;
     }
 
-    getId(): string|null {
-        return this.id;
-    }
+    clone(): Filter {
+        const filter = new Filter(this.name);
+        
+        const id = this.getId();
+        if(id !== null)
+            filter.setId(id);
+        if(this.content !== null)
+            filter.updateContent(this.content);
 
-    setId(id: string) {
-        this.id = id;
+        return filter;
     }
 }

@@ -1,67 +1,35 @@
 import { StudioEventBus } from '../components/EventBus';
 import { Layer } from '../components/Layer';
 import * as $ from 'jquery';
+import { IBusType } from '../interfaces/IBusType';
+import { Manager } from './Manager';
+import { EventBusManager } from './EventBusManager';
+import { LayersPanelEvents } from '../ui/LayersPanel';
 
-export class LayerManager {
-    private layers: Object = {}
-    private idCount: number = 1;
-
+export class LayerManager extends Manager<Layer> {
     private selectedLayer: Layer|null;
+    private static self: LayerManager|null = null;
 
-    constructor() {
-        StudioEventBus.subscribe("layer-selected", (event: JQuery.Event, data: any) => {
-            if(data.id in this.layers)
-                this.selectedLayer = this.get(data.id);
-            else
-                this.selectedLayer = null;
-        });
+    bootstrap() {
+        super.bootstrap(IBusType.LAYER);
     }
 
-    add(layer: Layer): void {
-        if(layer instanceof Layer) {
-            this.layers[this.idCount] = layer;
-            layer.setId(this.idCount);
-            this.idCount++;
-
-            StudioEventBus.publish("layer-add", { id: this.idCount-1, name: layer.getName() });
-        } else {
-            throw "Not a this.layers object";
+    public static singleton(): LayerManager {
+        if(this.self === null) {
+            this.self = new LayerManager();
+            this.self.bootstrap();
         }
+
+        return this.self;
     }
 
-    update(id: number, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, width: number, height: number): void {
-        if(id in this.layers) {
-            this.layers[id].update(canvas, context, width, height);
-        } else {
-            throw "Not a valid layer";
-        }
-    }
-
-    get(id: number): Layer {
-        if(id in this.layers) {
-            return this.layers[id];
-        } else {
-            throw "Not a valid layer";
-        }
-    }
-    
-    rename(id: number, name: string): void {
-        if(id in this.layers) {
-            this.layers[id].rename(name);
-
-            StudioEventBus.publish("layer-rename", { id: id, name: name });
-        } else {
-            throw "Not a valid layer";
-        }
-    }
-    
-    delete(id: number): void {
-        if(id in this.layers) {
-            delete this.layers[id];
-            
-            StudioEventBus.publish("layer-deleted", { id: id });
-        } else {
-            throw "Not a valid layer";
+    updateLayer(id: string, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, width: number, height: number): void {
+        try {
+            const layer = this.get(id);
+            layer.update(canvas, context, width, height);
+            this.update(layer);
+        } catch(e) {
+            throw e;
         }
     }
 
@@ -69,31 +37,55 @@ export class LayerManager {
         return this.selectedLayer;
     }
 
-    getAllLayers(callback: (layer: Layer, id: number) => void): void {
-        for(var key in this.layers) {
-            callback(this.layers[key], parseInt(key));
+    setSelected(id: string|null) {
+        try {
+            this.selectedLayer = id == null ? null : this.get(id);
+            StudioEventBus.publish(LayerManagerEvents.LAYER_SELECTED, this.selectedLayer);
+        } catch(e) {
+            throw e;
         }
     }
 
-    setVisibility(id: number, visible: boolean): void {
-        if(id in this.layers) {
-            this.layers[id].setVisibility(visible);
-            
-            StudioEventBus.publish("layer-visiblity-changed", { id: id, visible: visible });
-        } else {
-            throw "Not a valid layer";
+    getAllLayers(callback: (layer: Layer, id: string) => void): void {
+        try {
+            const itr = this.iterator();
+            let item = itr.next();
+            while(!item.done) {
+                callback(item.value[1], item.value[0]);
+                item = itr.next();
+            }
+        } catch(e) {
+            throw e;
         }
     }
 
-    setAlpha(id: number, alpha: number) {
-        if(id in this.layers) {
-            this.layers[id].setAlpha(alpha);
-            
-            StudioEventBus.publish("layer-alpha-changed", { id: id, alpha: alpha });
-        } else {
-            throw "Not a valid layer";
+    setVisibility(id: string, visible: boolean): void {
+        try {
+            const layer = this.get(id);
+            layer.setVisibility(visible);
+            this.update(layer);
+
+            StudioEventBus.publish(LayerManagerEvents.VISIBILITY_CHANGED, layer.clone());
+        } catch(e) {
+            throw e;
+        }
+    }
+
+    setAlpha(id: string, alpha: number) {
+        try {
+            const layer = this.get(id);
+            layer.setAlpha(alpha);
+            this.update(layer);
+
+            StudioEventBus.publish(LayerManagerEvents.ALPHA_CHANGED, layer.clone());
+        } catch(e) {
+            throw e;
         }
     }
 }
 
-export const LayerManagerModule: LayerManager = new LayerManager();
+export enum LayerManagerEvents {
+    LAYER_SELECTED = "layermanager:layer-selected",
+    ALPHA_CHANGED = "layermanager:alpha-changed",
+    VISIBILITY_CHANGED = "layermanager:visibility-changed"
+}

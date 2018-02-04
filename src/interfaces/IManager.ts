@@ -3,4 +3,5 @@ export interface IManager<T> {
     update(obj: T): void;
     delete(_id: string): T;
     get(_id: string): T;
+    iterator(): IterableIterator<[string, T]>;
 }

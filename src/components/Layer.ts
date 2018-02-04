@@ -1,16 +1,19 @@
 import * as $ from 'jquery';
+import { IClonableItem } from '../interfaces/IClonableItem';
+import { IEventMessageItem, EventMessageItem } from '../interfaces/EventMessageItem';
 
-export class Layer {
+export class Layer extends EventMessageItem implements IClonableItem<Layer> {
+    
     private name: string;
 
     private content: ImageData;
     private imageSrc: string;
     private visibility: boolean = true;
     private alpha: number  = 1;
-    private id: number|null = null;
     private image: HTMLImageElement;
     
     constructor(title: string) {
+        super();
         this.name = title;
     }
 
@@ -71,14 +74,6 @@ export class Layer {
         this.alpha = al;
     }
 
-    setId(id: number): void {
-        this.id = id;
-    }
-
-    getId(): number|null {
-        return this.id;
-    }
-
     getName(): string {
         return this.name;
     }
@@ -89,5 +84,32 @@ export class Layer {
 
     get Alpha(): number {
         return this.alpha;
+    }
+
+    setImageSrc(source: string): void {
+        this.imageSrc = source;
+    }
+
+    setImage(img: HTMLImageElement): void {
+        this.image = img;
+    }
+
+    setImageContent(content: ImageData): void {
+        this.content = content;
+    }
+
+    clone(): Layer {
+        const layer: Layer = new Layer(this.name);
+        const id = this.getId();
+
+        if(id !== null)
+            layer.setId(id);
+
+        layer.setVisibility(this.visibility);
+        layer.setImage(this.image);
+        layer.setImageContent(this.content);
+        layer.setImageSrc(this.imageSrc);
+        layer.setAlpha(this.Alpha);
+        return layer;
     }
 }

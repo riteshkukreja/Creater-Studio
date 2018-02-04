@@ -1,9 +1,12 @@
 import { StudioEventBus } from "../components/EventBus";
-import { LayerManagerModule } from "../managers/LayerManager";
+import { LayerManager, LayerManagerEvents } from "../managers/LayerManager";
 import { Layer } from "../components/Layer";
 import { Filter } from "../components/Filter";
 import { Position } from "../components/Position";
 import * as $ from 'jquery';
+import { LayersPanelEvents } from "./LayersPanel";
+import { FilterPanelEvents } from "./FiltersPanel";
+import { BrushManagerEvents, BrushManager } from "../managers/BrushManager";
 
 export class Board {
     private imageBoards = {};
@@ -40,12 +43,12 @@ export class Board {
         $("body").append(this.mouseLocationViewer);
     }
 
-    private updateAllCanvas(id: number): void {
+    private updateAllCanvas(id: string): void {
         /** Clear all context */
         this.clearAllCanvas();
 
         /** If arbitrary layer is selected,, load it in current context */
-        LayerManagerModule.getAllLayers((layer: Layer, i: number) => {
+        LayerManager.singleton().getAllLayers((layer: Layer, i: string) => {
             if (i < id) {
                 // draw image in previous boards array
                 const image = this.createImageBoard(i, layer.getImageSrc(), this.width, this.height, layer.Visibility, layer.Alpha);
@@ -68,7 +71,7 @@ export class Board {
         });
     }
 
-    private createImageBoard(id: number, src: string, width: number, height: number, visible: boolean, opacity: number): JQuery<HTMLImageElement> {
+    private createImageBoard(id: string, src: string, width: number, height: number, visible: boolean, opacity: number): JQuery<HTMLImageElement> {
         return <JQuery<HTMLImageElement>>$("<img/>", {
             src: src,
             'data-id': id,
@@ -80,8 +83,8 @@ export class Board {
 
     private putPoint(context: CanvasRenderingContext2D, e: JQuery.Event): void {
         if (e.clientX !== undefined && e.clientY !== undefined) {
-            StudioEventBus.publish('pen-clicked', new Position(e.clientX, e.clientY - 50));
-            StudioEventBus.publish('draw-point', {
+            StudioEventBus.publish(BoardEvents.MOUSE_DOWN, new Position(e.clientX, e.clientY - 50));
+            StudioEventBus.publish(BrushManagerEvents.DRAW_BRUSH, {
                 position: new Position(e.clientX, e.clientY - 50),
                 context: context
             });
@@ -127,7 +130,7 @@ export class Board {
             if(self.backContext !== null && self.backContext !== undefined) {
                 self.backContext.beginPath();
                 if (e.clientX !== undefined && e.clientY !== undefined) {
-                    StudioEventBus.publish('draw-point-end', {
+                    StudioEventBus.publish(BrushManagerEvents.DRAW_BRUSH_END, {
                         position: new Position(e.clientX, e.clientY - 50),
                         context: self.backContext
                     });
@@ -155,6 +158,26 @@ export class Board {
         return this.currContext;
     }
 
+    private saveLayer(): void {
+        
+        if (this.selectedLayer !== null && this.currContext !== null && this.backContext !== null) {
+            this.selectedLayer.update(this.backBoard[0], this.backContext,
+                parseInt(this.backBoard.attr('width') || this.width.toString()),
+                parseInt(this.backBoard.attr('height') || this.height.toString()));
+
+            LayerManager.singleton().update(this.selectedLayer);
+        }
+    }
+
+    private applyLayer(layer: Layer): void {
+        if(this.currContext !== null) {
+            //currContext.clearRect(0, 0, currentBoard.attr('width'), currentBoard.attr('height'));
+            layer.applyDrawing(this.currContext,
+                parseInt(this.currentBoard.attr('width') || this.width.toString()),
+                parseInt(this.currentBoard.attr('height') || this.height.toString()));
+        }
+    }
+
     getImage(): string {
         const dummyCanvas: JQuery<HTMLCanvasElement> = <JQuery<HTMLCanvasElement>>$("<canvas/>");
         const dummyContext: CanvasRenderingContext2D | null = dummyCanvas.get(0).getContext('2d');
@@ -163,7 +186,7 @@ export class Board {
         dummyCanvas.attr('height', parseInt(this.currentBoard.attr('height') || this.height.toString()));
 
         if (dummyContext !== null) {
-            LayerManagerModule.getAllLayers((layer: Layer, i: number) => {
+            LayerManager.singleton().getAllLayers((layer: Layer, i: string) => {
                 if (!layer.Visibility) return;
 
                 layer.apply(dummyContext);
@@ -199,79 +222,95 @@ export class Board {
         $(parent).append(this.currentBoard);
         $(parent).append(this.nextBoardParent);
 
-        StudioEventBus.subscribe("layer-selected", (event, data) => {
-            this.updateAllCanvas(data.id);
-
-            if (data.id) {
-                this.selectedLayer = LayerManagerModule.get(data.id);
-            } else {
-                this.selectedLayer = null;
+        /** Layer Events */
+        StudioEventBus.subscribe(LayersPanelEvents.LAYER_SELECTED, (event: JQuery.Event, data: Layer|null) => {
+            try {
+                if(data == null) {
+                    this.selectedLayer = null;
+                    return;
+                }
+                
+                const id = data.getId();
+                if(id !== null) {
+                    this.updateAllCanvas(id);
+                    this.selectedLayer = data;
+                } else {
+                    this.selectedLayer = null;
+                }
+            } catch(e) {
+                throw e;
             }
+            
         });
 
-        StudioEventBus.subscribe("layer-visiblity-changed", (event, data) => {
-            if (this.selectedLayer !== null && this.currContext !== null && this.selectedLayer == LayerManagerModule.get(data.id)) {
+        StudioEventBus.subscribe(LayerManagerEvents.VISIBILITY_CHANGED, (event: JQuery.Event, data: Layer) => {
+            if (this.selectedLayer !== null && this.currContext !== null && this.selectedLayer.getId() == data.getId()) {
+                // update selected layer
+                this.selectedLayer = data;
+
                 // if visibility changed for current board
-                if (data.visible)
-                    this.selectedLayer.apply(this.currContext);
+                if (data.Visibility)
+                    data.apply(this.currContext);
                 else
                     this.currContext.clearRect(0, 0,
                         parseInt(this.currentBoard.attr('width') || this.width.toString()),
                         parseInt(this.currentBoard.attr('height') || this.height.toString()));
             } else {
-                if (data.visible)
-                    this.imageBoards[data.id].removeClass('invisible');
-                else
-                    this.imageBoards[data.id].addClass('invisible');
+                const id = data.getId();
+                if(id !== null && this.imageBoards[id] !== undefined) {
+                    if (data.Visibility)
+                        this.imageBoards[id].removeClass('invisible');
+                    else
+                        this.imageBoards[id].addClass('invisible');
+                }
             }
         });
 
-        StudioEventBus.subscribe("layer-alpha-changed", (event, data) => {
-            // if layer is not visible, do nothing
-            if (!LayerManagerModule.get(data.id).Visibility) return;
+        StudioEventBus.subscribe(LayerManagerEvents.ALPHA_CHANGED, (event: JQuery.Event, data: Layer) => {
+            const id = data.getId();
 
-            if (this.selectedLayer !== null && this.currContext !== null && this.selectedLayer.getId() == data.id) {
+            // if layer is not visible, do nothing
+            if (id == null) return;
+
+            if (this.selectedLayer !== null && this.currContext !== null && this.selectedLayer.getId() == data.getId()) {
+                // update selected layer
+                this.selectedLayer = data;
+                
                 // current layer opacity is changed, redraw
                 this.currContext.clearRect(0, 0,
                     parseInt(this.currentBoard.attr('width') || this.width.toString()),
                     parseInt(this.currentBoard.attr('height') || this.height.toString()));
-                this.selectedLayer.apply(this.currContext);
-            } else {
+
+                if(data.Visibility)
+                    data.apply(this.currContext);
+            } else if(this.imageBoards[id] !== undefined) {
                 // other layer opacity has changed, chnage css opacity of the layer image, will be never called hopefully
-                this.imageBoards[data.id].css({ opacity: data.alpha });
+                this.imageBoards[id].css({ opacity: data.Alpha });
             }
         });
 
-        StudioEventBus.subscribe("draw-point-success", (event, data) => {
-            if (this.selectedLayer !== null && this.currContext !== null && this.backContext !== null) {
-                this.selectedLayer.update(this.backBoard[0], this.backContext,
-                    parseInt(this.backBoard.attr('width') || this.width.toString()),
-                    parseInt(this.backBoard.attr('height') || this.height.toString()));
-
-                // current layer opacity is changed, redraw
-                //currContext.clearRect(0, 0, currentBoard.attr('width'), currentBoard.attr('height'));
-                this.selectedLayer.applyDrawing(this.currContext,
-                    parseInt(this.currentBoard.attr('width') || this.width.toString()),
-                    parseInt(this.currentBoard.attr('height') || this.height.toString()));
+        /** Brush event */
+        StudioEventBus.subscribe(BrushManagerEvents.DRAW_POINT_SUCCESS, (event: JQuery.Event, data: Position) => {
+            if(this.selectedLayer !== null) {
+                this.saveLayer();
+                this.applyLayer(this.selectedLayer);
             }
         });
 
-        StudioEventBus.subscribe("filter-apply", (event, filter: Filter) => {
-            if (this.selectedLayer !== null && this.backContext !== null && this.currContext !== null) {
+        /** Filter events */
+        StudioEventBus.subscribe(FilterPanelEvents.FILTER_APPLY, (event, filter: Filter) => {
+            if (this.selectedLayer !== null && this.backContext !== null) {
                 filter.apply(this.backContext);
 
-                this.selectedLayer.update(this.backBoard[0], this.backContext,
-                    parseInt(this.backBoard.attr('width') || this.width.toString()),
-                    parseInt(this.backBoard.attr('height') || this.height.toString()));
-
-                // current layer opacity is changed, redraw
-                //currContext.clearRect(0, 0, currentBoard.attr('width'), currentBoard.attr('height'));
-                this.selectedLayer.applyDrawing(this.currContext,
-                    parseInt(this.currentBoard.attr('width') || this.width.toString()),
-                    parseInt(this.currentBoard.attr('height') || this.height.toString()));
+                this.saveLayer();
+                this.applyLayer(this.selectedLayer);
             }
         });
     }
 }
+
+export enum BoardEvents {
+    MOUSE_DOWN = "board:mouse-clicked",
+} 
 
 export const MainBoard: Board = new Board();

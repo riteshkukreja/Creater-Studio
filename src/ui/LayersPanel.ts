@@ -1,13 +1,19 @@
-import { Panel, LayerFilterPanel } from "./components/Panel";
-import { StudioEventBus } from "../components/EventBus";
-import { LayerManagerModule } from "../managers/LayerManager";
+import { Panel, LayerFilteWindow } from "./components/Panel";
+import { StudioEventBus, EventBus } from "../components/EventBus";
+import { LayerManager, LayerManagerEvents } from "../managers/LayerManager";
 import { Layer } from "../components/Layer";
 import * as $ from 'jquery';
 import "jquery-ui-bundle";
+import { IUISubPanel } from "../exceptions/IUISubPanel";
+import { EventBusManager } from "../managers/EventBusManager";
+import { IBusType } from "../interfaces/IBusType";
+import { FilterManagerEvents, FilterManager } from "../managers/FilterManager";
+import { ManagerEvents } from "../managers/Manager";
+import { Filter } from "../components/Filter";
 
-export class LayersPanel {
+export class LayersPanel implements IUISubPanel {
     private panel: Panel;
-    private layersDom: Map<number, JQuery<HTMLElement>> = new Map<number, JQuery<HTMLElement>>();
+    private layersDom: Map<string, JQuery<HTMLElement>> = new Map<string, JQuery<HTMLElement>>();
 
     private layerDomHolder: JQuery<HTMLElement>;
     private layerHolder: JQuery<HTMLElement>;
@@ -23,23 +29,28 @@ export class LayersPanel {
         
         const addLayerControl: JQuery<HTMLElement> = $("<i/>", { class: 'addIcon' });
         addLayerControl.click(e => {
-            LayerManagerModule.add(new Layer("Untitled Layer"));
+            LayerManager.singleton().add(new Layer("Untitled Layer"));
         });
 
         const addFilterControl: JQuery<HTMLElement> = $("<i/>", { class: 'recordIcon' });
         addFilterControl.click(e => {
             // TODO create filter
-            StudioEventBus.publish('add-filter', LayerManagerModule.getSelected());
+            const layer = LayerManager.singleton().getSelected();
+            if(layer !== null) {
+                const filter = new Filter(layer.getName());
+                filter.updateContent(layer.getImageSrc());
+                FilterManager.singleton().add(filter);
+            }
         });
 
         const deleteControl: JQuery<HTMLElement> = $("<i/>", { class: 'deleteIcon' });
         deleteControl.click(e => {
             // TODO delete layer
-            const layer = LayerManagerModule.getSelected();
+            const layer = LayerManager.singleton().getSelected();
             if(layer !== null) {
                 const id = layer.getId();
                 if(id !==  null)
-                    LayerManagerModule.delete(id);
+                    LayerManager.singleton().delete(id);
             }
         });
         
@@ -61,9 +72,14 @@ export class LayersPanel {
 
         const visibilityControl: JQuery<HTMLElement> = $("<i/>", { class: 'visibilityIcon', 'data-visible': true });
         visibilityControl.click(e => {
-            const id: number = $(e.target).parent().parent().data('id');
-            LayerManagerModule.setVisibility(id, !LayerManagerModule.get(id).Visibility);
-            visibilityControl.data('visible', LayerManagerModule.get(id).Visibility);
+            const id: string = $(e.target).parent().parent().data('id');
+            const visible: boolean = visibilityControl.data('visible') === true;
+            try {
+                const layer = LayerManager.singleton().setVisibility(id, !visible);
+                visibilityControl.data('visible', !visible);
+            } catch(e) {
+                throw e;
+            }
         });
 
         controlHolder.append(renameLayerControl);
@@ -88,18 +104,18 @@ export class LayersPanel {
         });
 
         alphaSlider.on("input", function(e) {
-            const layer = LayerManagerModule.getSelected();
+            const layer = LayerManager.singleton().getSelected();
             if(layer !== null) {
                 const id = layer.getId();
                 if(id !== null) {
-                    LayerManagerModule.setAlpha(id, parseFloat(<string> alphaSlider.val() || '1'));
+                    LayerManager.singleton().setAlpha(id, parseFloat(<string> alphaSlider.val() || '1'));
                 }
             }
         });
 
-        StudioEventBus.subscribe("layer-alpha-reset", (event, data) => {
-            const layer = LayerManagerModule.getSelected();
-            if(layer !== null) {
+        StudioEventBus.subscribe(LayersPanelEvents.LAYER_ALPHA_RESET, (event: JQuery.Event, data: Layer) => {
+            const layer = LayerManager.singleton().getSelected();
+            if(layer !== null && layer.getId() === data.getId()) {
                 alphaSlider.val(layer.Alpha); 
             }
         });
@@ -115,39 +131,44 @@ export class LayersPanel {
     }  
 
     private onRenameHandler(parent: JQuery<HTMLElement>): void {
-        const id: number = parent.data('id');
-        const name: string = parent.children().first().text();
+        try {
+            const id: string = parent.data('id');
+            const name: string = parent.children().first().text();
+            const layer: Layer = LayerManager.singleton().get(id);
 
-        const nameInput = $("<input/>", { type: 'text', value: name, class: 'layer-input' });
-        nameInput.on('blur', e => {
-            LayerManagerModule.rename(id, <string> nameInput.val() || "Undefined");
+            const nameInput = $("<input/>", { type: 'text', value: name, class: 'layer-input' });
+            nameInput.on('blur', e => {
+                layer.rename(<string> nameInput.val() || "Undefined");
+                LayerManager.singleton().update(layer);
 
-            nameInput.remove();
-            parent.children().first().removeClass("hidden");
-        });
-
-        nameInput.on('keyup', e => {
-            const code: number = e.keyCode || e.charCode || e.which;
-            if(code == 13) {
-                LayerManagerModule.rename(id, <string> nameInput.val() || "Undefined");
-                
                 nameInput.remove();
                 parent.children().first().removeClass("hidden");
-            }
-        });
-        
-        parent.append(nameInput);
-        parent.children().first().addClass("hidden");
+            });
 
-        nameInput.focus();
+            nameInput.on('keyup', e => {
+                const code: number = e.keyCode || e.charCode || e.which;
+                if(code == 13) {
+                    layer.rename(<string> nameInput.val() || "Undefined");
+                    LayerManager.singleton().update(layer);
+                    
+                    nameInput.remove();
+                    parent.children().first().removeClass("hidden");
+                }
+            });
+            
+            parent.append(nameInput);
+            parent.children().first().addClass("hidden");
+
+            nameInput.focus();
+        } catch(e) {}
     }
 
-    private addLayerAtEnd(id: number, name: string): void {
+    private addLayerAtEnd(id: string, name: string): void {
         const layer: JQuery<HTMLDivElement> = <JQuery<HTMLDivElement>> $("<div/>", { 'data-id': id, class: 'layer' });
         const layerTitle: JQuery<HTMLSpanElement> = <JQuery<HTMLSpanElement>> $("<span/>", { html: name });
 
         layerTitle.click(e => {
-            StudioEventBus.publish("layer-selected", { id: id });
+            LayerManager.singleton().setSelected(id);
         });
 
         layerTitle.dblclick(e => {
@@ -160,16 +181,16 @@ export class LayersPanel {
         this.layerHolder.append(layer);
         this.layersDom.set(id, layer);
         
-        StudioEventBus.publish("layer-added", { id: id });
-        StudioEventBus.publish("layer-selected", { id: id });
+        StudioEventBus.publish(LayersPanelEvents.LAYER_ADDED, { id: id });
+        LayerManager.singleton().setSelected(id);
     }
     
-    private addLayerAtStart(id: number, name: string): void {
+    private addLayerAtStart(id: string, name: string): void {
         const layer: JQuery<HTMLDivElement> = <JQuery<HTMLDivElement>> $("<div/>", { 'data-id': id, class: 'layer' });
         const layerTitle: JQuery<HTMLSpanElement> = <JQuery<HTMLSpanElement>> $("<span/>", { html: name });
 
         layerTitle.click(e => {
-            StudioEventBus.publish("layer-selected", { id: id });
+            LayerManager.singleton().setSelected(id);
         });
 
         layerTitle.dblclick(e => {
@@ -182,11 +203,11 @@ export class LayersPanel {
         this.layerHolder.prepend(layer);
         this.layersDom.set(id, layer);
         
-        StudioEventBus.publish("layer-added", { id: id });
-        StudioEventBus.publish("layer-selected", { id: id });
+        StudioEventBus.publish(LayersPanelEvents.LAYER_ADDED, { id: id });
+        LayerManager.singleton().setSelected(id);
     }
 
-    private renameLayer(id: number, name: string): void {
+    private renameLayer(id: string, name: string): void {
         if(this.layersDom.has(id)) {
             const selectedLayer = this.layersDom.get(id);
             
@@ -197,7 +218,7 @@ export class LayersPanel {
         }
     }
     
-    private selectLayer(id: number): void {
+    private selectLayer(id: string): void {
         if(this.layersDom.has(id)) {
             if(this.selectedLayer !== null && this.selectedLayer !== undefined)
                 this.selectedLayer.removeClass("layer-selected");
@@ -212,60 +233,85 @@ export class LayersPanel {
         }
     }
 
-    private deleteLayer(id: number): void {
+    private deleteLayer(id: string): void {
+        
         if(this.layersDom.has(id)) {
             const layerToMatch = this.layersDom.get(id);
             if(layerToMatch !== undefined && layerToMatch === this.selectedLayer ) {
                 let i = this.getFirstKeyExcept(id, this.layersDom);
-                StudioEventBus.publish("layer-selected", { id: i });
+                LayerManager.singleton().setSelected(i);
             }
             
             if(layerToMatch !== undefined)
                 layerToMatch.remove();
             
-                this.layersDom.delete(id);
+            this.layersDom.delete(id);
         } else {
             throw "Layer doesn't exists";
         }
     }
 
-    private getFirstKeyExcept(key: number, obj: any): string|null {
-        const keys = Object.keys(obj);
-        if(keys.length < 1 || (keys.length == 1 && keys[0] == key + "")) return null;
+    private getFirstKeyExcept(key: string, obj: Map<string, JQuery<HTMLElement>> ): string|null {
+        const keys = obj.keys();
+        let firstKey = keys.next();
 
-        if(keys.indexOf(key + "") > -1)
-            keys.splice(keys.indexOf(key + ""), 1);
+        if(firstKey.done) return null;
 
-        return keys[0];
+        if(firstKey.value == key) firstKey = keys.next();
+        
+        if(firstKey.done) return null;
+
+        return firstKey.value;
     }
 
-    initialize(panel: Panel): void {
+    public initialize(panel: Panel): void {
         this.panel = panel;
         this.layerDomHolder = this.panel.addSubPanel("Layers");
 
-        StudioEventBus.subscribe("layer-add", (event: JQuery.Event, data: any) => {
-            this.addLayerAtStart(data.id, data.name);
+        StudioEventBus.subscribe(IBusType.LAYER.toString() + ManagerEvents.ADD.toString(), (event: JQuery.Event, data: Layer) => {
+            const _id = data.getId();
+            if(_id !== null)
+                this.addLayerAtStart(_id, data.getName());
         });
 
-        StudioEventBus.subscribe("layer-rename", (event: JQuery.Event, data: any) => {
-            this.renameLayer(data.id, data.name);
-        });
-        
-        StudioEventBus.subscribe("layer-selected", (event: JQuery.Event, data: any) => {
-            if(data.id) {
-                this.selectLayer(data.id);
-                StudioEventBus.publish("layer-alpha-reset", null);
-            }
+        StudioEventBus.subscribe(IBusType.LAYER.toString() + ManagerEvents.UPDATE.toString(), (event: JQuery.Event, data: Layer) => {
+            const _id = data.getId();
+            if(_id !== null)
+                this.renameLayer(_id, data.getName());
         });
 
-        StudioEventBus.subscribe("layer-deleted", (event: JQuery.Event, data: any) => {
-            this.deleteLayer(data.id);
+        StudioEventBus.subscribe(IBusType.LAYER.toString() + ManagerEvents.REMOVE.toString(), (event: JQuery.Event, data: Layer) => {
+            const _id = data.getId();
+            if(_id !== null)
+                this.deleteLayer(_id);
         });
 
         this.addTopControls();
         this.addLayersHolder();
+        
+        /** Local events */
+        StudioEventBus.subscribe(LayerManagerEvents.LAYER_SELECTED, (event: JQuery.Event, data: Layer|null) => {
+            if(data == null) {
+                StudioEventBus.publish(LayersPanelEvents.LAYER_SELECTED, null);
+                return;   
+            };
+
+            const id = data.getId();
+            if(id !== null) {
+                this.selectLayer(id);
+                StudioEventBus.publish(LayersPanelEvents.LAYER_SELECTED, data);
+                StudioEventBus.publish(LayersPanelEvents.LAYER_ALPHA_RESET, data);
+            }
+        });
+
     }
 
+}
+
+export enum LayersPanelEvents {
+    LAYER_ADDED = "layerpanel:layer-added",
+    LAYER_SELECTED = "layerpanel:layer-selected",
+    LAYER_ALPHA_RESET = "layerpanel:layer-alpha-reset",
 }
 
 export const LayersPanelModule: LayersPanel = new LayersPanel();

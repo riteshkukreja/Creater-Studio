@@ -1,15 +1,17 @@
 import { Position } from './Position';
 import { Color } from './Color';
 import { RangeMap, PointsOnLineBetween, getRandomNumber } from '../utils/Helper';
+import { EventMessageItem } from '../interfaces/EventMessageItem';
+import { IClonableItem } from '../interfaces/IClonableItem';
 
-export class Brush {
+export class Brush extends EventMessageItem implements IClonableItem<Brush> {
     private label: string;
-    private lastPosition: Position|null;
 
     private setup: (context: CanvasRenderingContext2D) => void;
     private drawer: (lastPosition: Position|null, position: Position, size: number, color: Color, context: CanvasRenderingContext2D) => void;
     
     constructor(label: string, setupCallback: ((context) => void)|null, drawCallback: (lastPosition: Position|null, position: Position, size: number, color: Color, context: CanvasRenderingContext2D) => void) {
+        super();
         this.label = label || "sample brush";
 
         this.setup = setupCallback || function(context) {
@@ -19,11 +21,7 @@ export class Brush {
         this.drawer = drawCallback;
     }
 
-    initialize(): void {
-        this.lastPosition = null;
-    }
-
-    draw(position: Position, size: number, color: Color, context: CanvasRenderingContext2D): void {
+    draw(lastPosition: Position|null, position: Position, size: number, color: Color, context: CanvasRenderingContext2D): void {
         this.setup(context);
 
         // context.lineWidth = 2 * size;
@@ -35,17 +33,17 @@ export class Brush {
         context.save();
         context.globalAlpha = color.Alpha;
 
-        if(this.lastPosition !== null && this.lastPosition !== undefined) {
-            PointsOnLineBetween(this.lastPosition, position, size/4)
+        if(lastPosition !== null && lastPosition !== undefined) {
+            PointsOnLineBetween(lastPosition, position, size/4)
                 .map(point => {
-                    this.drawer(this.lastPosition, point, size, color, context);
-                    this.lastPosition = point;
+                    this.drawer(lastPosition, point, size, color, context);
+                    lastPosition = point;
                     context.beginPath();
                 });
         }
 
 
-        this.drawer(this.lastPosition, position, size, color, context);
+        this.drawer(lastPosition, position, size, color, context);
         context.globalAlpha = 1;
         context.restore();
 
@@ -53,24 +51,21 @@ export class Brush {
 
         context.beginPath();
         context.moveTo(position.x, position.y);
-
-        this.lastPosition = position;
-    }
-
-    getCursorAngle(position: Position): number {
-        if(this.lastPosition == null) return 0;
-        return this.lastPosition.angle(position);
     }
 
     getLabel(): string {
         return this.label;
     }
-}
 
-const getCursorAngle = (position1: Position|null, position2: Position|null): number => {
-    if(!position1 || !position2) return 0;
-    
-    return position1.angle(position2);
+    clone(): Brush {
+        const brush = new Brush(this.label, this.setup, this.drawer);
+        const id = this.getId();
+        
+        if(id !== null)
+            brush.setId(id);
+        
+        return brush;
+    }
 }
 
 /** Brushes */

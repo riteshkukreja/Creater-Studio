@@ -34,9 +34,9 @@ export class Panel{
 
     addSubPanel(title: string): JQuery<HTMLElement> {
         let tabHTML: JQuery<HTMLElement> = $("<li/>");
-        let contentHTML: JQuery<HTMLElement> = $("<div/>", { class: 'tab-pane', id: this.gid + "_" + title });
+        let contentHTML: JQuery<HTMLElement> = $("<div/>", { class: 'tab-pane', id: `${this.gid}_${title}` });
 
-        let tabA: JQuery<HTMLElement> = $("<a/>", { href: '#'+this.gid+'_'+title, 'data-toggle': 'tab', text: title });
+        let tabA: JQuery<HTMLElement> = $("<a/>", { href: `#${this.gid}_${title}`, 'data-toggle': 'tab', text: title });
         tabA.appendTo(tabHTML);
 
         this.navHolder.append(tabHTML);
@@ -58,7 +58,7 @@ export class Panel{
     }
 
     getSubPanel(title: string): JQuery<HTMLElement> {
-        return $(`#{{ this.gid }}_{{ title }}`);
+        return $(`#${this.gid}_${title}`);
     }
 
     resize(width: number, height: number): void {
@@ -87,12 +87,12 @@ export class Panel{
     }
 }
  
-export const LayerFilterPanel = new Panel("layer_filter");
-LayerFilterPanel.initiaize($("#panels"));
-LayerFilterPanel.resize(300, 500);
-LayerFilterPanel.moveTo(window.innerWidth - 300, 50);
+export const LayerFilteWindow = new Panel("layer_filter");
+LayerFilteWindow.initiaize($("#panels"));
+LayerFilteWindow.resize(300, 500);
+LayerFilteWindow.moveTo(window.innerWidth - 300, 50);
 
-export const ToolsPanel = new Panel("tools");
-ToolsPanel.initiaize($("#panels"));
-ToolsPanel.resize(300, 500);
-ToolsPanel.moveTo(0, 50);
+export const ToolsWindow = new Panel("tools");
+ToolsWindow.initiaize($("#panels"));
+ToolsWindow.resize(300, 500);
+ToolsWindow.moveTo(0, 50);
