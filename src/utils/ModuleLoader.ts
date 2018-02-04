@@ -34,8 +34,8 @@ export const ModuleLoader = (function() {
         "ui/ControlSwatch",
         "ui/BrushLoader",
         "ui/ColorLoader",
-        "ui/LayersPanel",
-        "ui/FiltersPanel",
+        "ui/panels/LayersPanel",
+        "ui/panels/FiltersPanel",
     
         /** Custom */
         "scripts/brushes",

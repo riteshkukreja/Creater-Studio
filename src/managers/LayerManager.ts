@@ -4,7 +4,7 @@ import * as $ from 'jquery';
 import { IBusType } from '../interfaces/IBusType';
 import { Manager } from './Manager';
 import { EventBusManager } from './EventBusManager';
-import { LayersPanelEvents } from '../ui/LayersPanel';
+import { LayersPanelEvents } from '../ui/panels/LayersPanel';
 
 export class LayerManager extends Manager<Layer> {
     private selectedLayer: Layer|null;

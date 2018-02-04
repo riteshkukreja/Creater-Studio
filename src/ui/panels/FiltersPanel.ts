@@ -1,14 +1,14 @@
-import { Filter } from "../components/Filter";
-import { Panel, LayerFilteWindow } from "./components/Panel";
-import { StudioEventBus } from "../components/EventBus";
+import { Filter } from "../../components/Filter";
+import { Panel, LayerFilteWindow } from "../components/Panel";
+import { StudioEventBus } from "../../components/EventBus";
 
 import * as $ from 'jquery';
 import "jquery-ui-bundle";
-import { FilterManager, FilterManagerEvents } from "../managers/FilterManager";
-import { IUISubPanel } from "../exceptions/IUISubPanel";
-import { IBusType } from "../interfaces/IBusType";
-import { ManagerEvents } from "../managers/Manager";
-import { InvalidArgException } from "../exceptions/InvalidArgException";
+import { FilterManager, FilterManagerEvents } from "../../managers/FilterManager";
+import { IUISubPanel } from "../../exceptions/IUISubPanel";
+import { IBusType } from "../../interfaces/IBusType";
+import { ManagerEvents } from "../../managers/Manager";
+import { InvalidArgException } from "../../exceptions/InvalidArgException";
 
 export class FiltersPanel implements IUISubPanel {
     private panel: Panel;

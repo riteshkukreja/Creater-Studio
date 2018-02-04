@@ -4,8 +4,8 @@ import { Layer } from "../components/Layer";
 import { Filter } from "../components/Filter";
 import { Position } from "../components/Position";
 import * as $ from 'jquery';
-import { LayersPanelEvents } from "./LayersPanel";
-import { FilterPanelEvents } from "./FiltersPanel";
+import { LayersPanelEvents } from "./panels/LayersPanel";
+import { FilterPanelEvents } from "./panels/FiltersPanel";
 import { BrushManagerEvents, BrushManager } from "../managers/BrushManager";
 
 export class Board {
@@ -229,7 +229,7 @@ export class Board {
                     this.selectedLayer = null;
                     return;
                 }
-                
+
                 const id = data.getId();
                 if(id !== null) {
                     this.updateAllCanvas(id);

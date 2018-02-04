@@ -1,15 +1,15 @@
-import { Panel, LayerFilteWindow } from "./components/Panel";
-import { StudioEventBus, EventBus } from "../components/EventBus";
-import { LayerManager, LayerManagerEvents } from "../managers/LayerManager";
-import { Layer } from "../components/Layer";
+import { Panel, LayerFilteWindow } from "../components/Panel";
+import { StudioEventBus, EventBus } from "../../components/EventBus";
+import { LayerManager, LayerManagerEvents } from "../../managers/LayerManager";
+import { Layer } from "../../components/Layer";
 import * as $ from 'jquery';
 import "jquery-ui-bundle";
-import { IUISubPanel } from "../exceptions/IUISubPanel";
-import { EventBusManager } from "../managers/EventBusManager";
-import { IBusType } from "../interfaces/IBusType";
-import { FilterManagerEvents, FilterManager } from "../managers/FilterManager";
-import { ManagerEvents } from "../managers/Manager";
-import { Filter } from "../components/Filter";
+import { IUISubPanel } from "../../exceptions/IUISubPanel";
+import { EventBusManager } from "../../managers/EventBusManager";
+import { IBusType } from "../../interfaces/IBusType";
+import { FilterManagerEvents, FilterManager } from "../../managers/FilterManager";
+import { ManagerEvents } from "../../managers/Manager";
+import { Filter } from "../../components/Filter";
 
 export class LayersPanel implements IUISubPanel {
     private panel: Panel;
