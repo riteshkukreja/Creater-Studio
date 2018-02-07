@@ -18,7 +18,7 @@ export class Panel{
     }
 
     initiaize(parent: JQuery<HTMLElement>): void {
-        this.holder = $("<div/>", { class: 'panel', id: this.gid });
+        this.holder = $("<div/>", { class: 'panel', id: this.gid, style: 'position: absolute' });
         this.navHolder = $("<div/>", { class: 'nav nav-pills' });
         this.contentHolder = $("<div/>", { class: 'tab-content clearfix' });
         
@@ -61,11 +61,12 @@ export class Panel{
         return $(`#${this.gid}_${title}`);
     }
 
-    resize(width: number, height: number): void {
-        this.holder.css({
-            width: width + 'px',
-            height: height + 'px'
-        });
+    resize(width?: number, height?: number): void {
+        if(width !== undefined)
+            this.holder.css('width', width + 'px');
+        
+        if(height !== undefined)
+            this.holder.css('height', height + 'px');
     }
     
     moveTo(x: number, y: number): void {
@@ -90,9 +91,9 @@ export class Panel{
 export const LayerFilteWindow = new Panel("layer_filter");
 LayerFilteWindow.initiaize($("#panels"));
 LayerFilteWindow.resize(300, 500);
-LayerFilteWindow.moveTo(window.innerWidth - 300, 50);
+LayerFilteWindow.moveTo(window.innerWidth - 300, 100);
 
 export const ToolsWindow = new Panel("tools");
 ToolsWindow.initiaize($("#panels"));
-ToolsWindow.resize(300, 500);
-ToolsWindow.moveTo(0, 50);
+ToolsWindow.resize(undefined, undefined);
+ToolsWindow.moveTo(0, 100);

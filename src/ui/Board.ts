@@ -7,6 +7,8 @@ import * as $ from 'jquery';
 import { LayersPanelEvents } from "./panels/LayersPanel";
 import { FilterPanelEvents } from "./panels/FiltersPanel";
 import { BrushManagerEvents, BrushManager } from "../managers/BrushManager";
+import { ToolManagerEvents } from "../managers/ToolManager";
+import { ColorLoaderModule } from "./loaders/ColorLoader";
 
 export class Board {
     private imageBoards = {};
@@ -84,9 +86,12 @@ export class Board {
     private putPoint(context: CanvasRenderingContext2D, e: JQuery.Event): void {
         if (e.clientX !== undefined && e.clientY !== undefined) {
             StudioEventBus.publish(BoardEvents.MOUSE_DOWN, new Position(e.clientX, e.clientY - 50));
-            StudioEventBus.publish(BrushManagerEvents.DRAW_BRUSH, {
+            StudioEventBus.publish(ToolManagerEvents.EXECUTE_TOOL, {
                 position: new Position(e.clientX, e.clientY - 50),
-                context: context
+                color: ColorLoaderModule.getSelected(),
+                context: context,
+                width: this.width,
+                height: this.height
             });
         }
     }
@@ -121,7 +126,7 @@ export class Board {
 
             /** show mouse current position */
             if (e.clientX !== undefined && e.clientY !== undefined) {
-                this.mouseLocationViewer.text(e.clientX + "-" + e.clientY);
+                this.mouseLocationViewer.text(new Position(e.clientX, e.clientY - 50).toString());
             }
         });
 
@@ -130,7 +135,7 @@ export class Board {
             if(self.backContext !== null && self.backContext !== undefined) {
                 self.backContext.beginPath();
                 if (e.clientX !== undefined && e.clientY !== undefined) {
-                    StudioEventBus.publish(BrushManagerEvents.DRAW_BRUSH_END, {
+                    StudioEventBus.publish(ToolManagerEvents.TOOL_RESET, {
                         position: new Position(e.clientX, e.clientY - 50),
                         context: self.backContext
                     });
@@ -290,7 +295,7 @@ export class Board {
         });
 
         /** Brush event */
-        StudioEventBus.subscribe(BrushManagerEvents.DRAW_POINT_SUCCESS, (event: JQuery.Event, data: Position) => {
+        StudioEventBus.subscribe(ToolManagerEvents.EXECUTE_TOOL_SUCCESS, (event: JQuery.Event, data: Position) => {
             if(this.selectedLayer !== null) {
                 this.saveLayer();
                 this.applyLayer(this.selectedLayer);

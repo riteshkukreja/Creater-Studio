@@ -74,11 +74,23 @@ export const ImageDataColorAt = (imageData: ImageData, position: Position, width
     const color: Color = new Color(
         imageData.data[pos], //red
         imageData.data[pos + 1], //green
-        imageData.data[pos + 2], //green
-        imageData.data[pos + 3] //alpha
+        imageData.data[pos + 2], //blue
+        RangeMap(imageData.data[pos + 3], 0, 255, 0, 1) //alpha
     );
 
     return color;
+}
+
+export const SetImageDataColor = (imageData: ImageData, position: Position, width: number, height: number, color: Color): void => {
+    const pos: number = 4 * MatrixToLinearPositions(position, width);
+
+    if(pos < 0 || pos >= imageData.data.length)
+        throw new InvalidArgException("Index out of bound execption");
+
+    imageData.data[pos] = color.Red; //red
+    imageData.data[pos + 1] = color.Green; //green
+    imageData.data[pos + 2] = color.Blue; //blue
+    imageData.data[pos + 3] = RangeMap(color.Alpha, 0, 1, 0, 255); //alpha
 }
 
 export const ColorDiff = (color1: Color, color2: Color): Color => {
@@ -90,14 +102,13 @@ export const ColorDiff = (color1: Color, color2: Color): Color => {
     );
 }
 
-export const BoundingBox = (context: CanvasRenderingContext2D, position: Position, width: number, height: number, callback?: (position: Position, color: Color) => void): Position[] => {
-    const imageData: ImageData = context.getImageData(0, 0, width, height);
+export const BoundingBox = (imageData: ImageData, position: Position, width: number, height: number, callback?: (position: Position, color: Color) => void): Position[] => {
     const clickedPositionColor: Color = ImageDataColorAt(imageData, position, width, height);
     const colorDelta: number = 10; // delta between colors while selectin border of box
     
     const queue: Queue<Position> = new Queue<Position>([position]);
     const borderPositions: Position[] = [];
-    const traversed: Map<Position, boolean> = new Map<Position, boolean>();
+    const traversed: Map<string, boolean> = new Map<string, boolean>();
 
     while(!queue.empty()) {
         const pos = queue.pop();
@@ -105,9 +116,9 @@ export const BoundingBox = (context: CanvasRenderingContext2D, position: Positio
         if(pos !== null) {
             try {
                 /** Check if already travered */
-                if(traversed.has(pos)) continue;
+                if(traversed.has(pos.toString())) continue;
 
-                traversed.set(pos, true);
+                traversed.set(pos.toString(), true);
 
                 /** Retrieve the color at this position */
                 const color = ImageDataColorAt(imageData, pos, width, height);
@@ -138,6 +149,7 @@ export const BoundingBox = (context: CanvasRenderingContext2D, position: Positio
                     if(pos.y < height-1) {
                         queue.push(new Position(pos.x, pos.y + 1 ));
                     }
+
                 }
                 /** else consider this position as border and stop propogation */
                 else {
@@ -164,7 +176,7 @@ export class Queue<T> {
     }
 
     push(...items: T[]): void {
-        this.items.concat(items);
+        this.items = this.items.concat(items);
     }
 
     pop(): T|null {
@@ -193,4 +205,58 @@ export const getCursorAngle = (position1: Position|null, position2: Position|nul
     if(!position1 || !position2) return 0;
     
     return position1.angle(position2);
+}
+
+export class WorkerRunner {
+    private worker: Worker|null = null;
+
+    constructor(url: string, callback: (data: any) => void) {
+        this.worker = new Worker(url);
+
+        this.worker.addEventListener('message', (e: any) => {
+            const data = e.data;
+            callback(data);
+        });
+    }
+
+    timeout(time: number) {
+        setTimeout(() => {
+            if(this.worker !== null)
+                this.worker.terminate();
+        }, time);
+
+        return this;
+    }
+
+    send(data: any) {
+        if(this.worker !== null) {
+            this.worker.postMessage(data);
+        }
+
+        return this;
+    }
+
+    running(): boolean {
+        return this.worker !== null;
+    }
+
+    waitFor(time: number): void {
+        //Promise. 
+    }
+}
+
+export const CreateWorker = async(url: string, data: any): Promise<any> => {
+    return new Promise(function(resolve, reject) {
+        var v = new Worker(url);
+        v.postMessage(data);
+        v.onmessage = function(event){
+            // If you report errors via messages, you'd have a branch here for checking
+            // for an error and either calling `reject` or `resolve` as appropriate.
+            resolve(event.data);
+        };
+        v.onerror = function(event) {
+            // Rejects the promise using the error associated with the ErrorEvent
+            reject(event.error);
+        };
+    });
 }

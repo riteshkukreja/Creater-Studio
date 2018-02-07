@@ -8,9 +8,13 @@ export abstract class Tool extends EventMessageItem implements ITool, IClonableI
     
     abstract initialize(): void;
 
-    abstract draw(position: Position, size: number, color: Color, context: CanvasRenderingContext2D, width: number, height: number): void;
+    abstract reset(): void;
+
+    abstract async draw(position: Position, color: Color, context: CanvasRenderingContext2D, width: number, height: number): Promise<void>;
 
     abstract getLabel(): string;
 
     abstract clone(): Tool;
+
+    abstract getDom(): JQuery<HTMLElement>;
 }

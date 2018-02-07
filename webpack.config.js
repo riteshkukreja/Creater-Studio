@@ -2,7 +2,10 @@ const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
-  entry: './src/app.ts',
+  entry: {
+    'bundle': './src/app.ts',
+    'boundingbox': './src/scripts/BoundingBox.ts'
+  },
   module: {
     rules: [
       {
@@ -22,7 +25,7 @@ module.exports = {
     // }
   },
   output: {
-    filename: 'bundle.js',
+    filename: '[name].js',
     path: path.resolve(__dirname, 'dist')
   },
   // plugins: [

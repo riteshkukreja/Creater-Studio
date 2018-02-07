@@ -12,9 +12,9 @@ import { ManagerEvents } from "../../managers/Manager";
 
 export class ToolsPanel implements IUISubPanel {
     private panel: Panel;
-    private toolsDom: Map<string, JQuery<HTMLDivElement>> = new Map<string, JQuery<HTMLDivElement>>();
+    private toolsDom: Map<string, JQuery<HTMLElement>> = new Map<string, JQuery<HTMLElement>>();
     private toolHolder: JQuery<HTMLElement>;
-    private selectedTool: JQuery<HTMLElement>|null;
+    private selectedTool: JQuery<HTMLElement>|null = null;
     
     private eventBus: EventBus<Tool>;
 
@@ -41,8 +41,18 @@ export class ToolsPanel implements IUISubPanel {
             if(tool === null) {
                 /** select the first tool */
                 const firstDomTool = this.toolsDom.values().next();
-                if(!firstDomTool.done) this.selectedTool = firstDomTool.value;
-                else this.selectedTool = null;
+                if(!firstDomTool.done) {
+                    if(this.selectedTool !== null)
+                        this.selectedTool.removeClass('selected');
+
+                    this.selectedTool = firstDomTool.value;
+                    this.selectedTool.addClass('selected');
+                } else { 
+                    if(this.selectedTool !== null)
+                        this.selectedTool.removeClass('selected');
+
+                    this.selectedTool = null;
+                }
             } else {
                 const _id = tool.getId();
                 if(_id === null) {
@@ -50,9 +60,13 @@ export class ToolsPanel implements IUISubPanel {
                 }
 
                 const Dtool = this.toolsDom.get(_id);
-                if(Dtool !== undefined)
+                if(Dtool !== undefined) {
+                    if(this.selectedTool !== null)
+                        this.selectedTool.removeClass('selected');
+                    
                     this.selectedTool = Dtool;
-                else
+                    this.selectedTool.addClass('selected');
+                } else
                     throw new InvalidArgException(`Tool with id ${_id} doesn't exists in DOM`);
             }
         });
@@ -63,14 +77,13 @@ export class ToolsPanel implements IUISubPanel {
         if(_id == null)
             throw new InvalidArgException("Tool has invalid id of null");
 
-        const Dtool: JQuery<HTMLDivElement> = <JQuery<HTMLDivElement>> $("<div/>", { 'data-id': _id, class: 'tool' });
-        const DToolTitle: JQuery<HTMLSpanElement> = <JQuery<HTMLSpanElement>> $("<span/>", { text: tool.getLabel() });
+        const Dtool: JQuery<HTMLElement> = $("<section/>", { 'data-id': _id, class: 'tool' });
 
         Dtool.click(e => {
             ToolManager.singleton().setSelected(_id);
         });
 
-        Dtool.append(DToolTitle);
+        Dtool.append(tool.getDom());
 
         this.toolHolder.append(Dtool);
         this.toolsDom.set(_id, Dtool);
@@ -83,14 +96,12 @@ export class ToolsPanel implements IUISubPanel {
         if(_id == null || this.toolsDom.get(_id) == null)
             throw new InvalidArgException("Tool has invalid id of null");
 
-        const Dtool: JQuery<HTMLDivElement>|undefined = this.toolsDom.get(_id);
+        const Dtool: JQuery<HTMLElement>|undefined = this.toolsDom.get(_id);
         if(Dtool == undefined)
             throw new InvalidArgException(`Tool with id ${_id} doesn't exists in DOM`);
 
-        const DToolTitle: JQuery<HTMLSpanElement> = <JQuery<HTMLSpanElement>> $("<span/>", { text: tool.getLabel() });
-
         Dtool.empty();
-        Dtool.append(DToolTitle);
+        Dtool.append(tool.getDom());
     }
 
     private removeTool(tool: Tool): void {
@@ -98,7 +109,7 @@ export class ToolsPanel implements IUISubPanel {
         if(_id == null || this.toolsDom.get(_id) == null)
             throw new InvalidArgException("Tool has invalid id of null");
 
-        const Dtool: JQuery<HTMLDivElement>|undefined = this.toolsDom.get(_id);
+        const Dtool: JQuery<HTMLElement>|undefined = this.toolsDom.get(_id);
         if(Dtool == undefined)
             throw new InvalidArgException(`Tool with id ${_id} doesn't exists in DOM`);
 

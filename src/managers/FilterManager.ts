@@ -7,7 +7,7 @@ import { Manager } from './Manager';
 import { IBusType } from '../interfaces/IBusType';
 import { EventBusManager } from './EventBusManager';
 import { Layer } from '../components/Layer';
-import { FilterPanelEvents } from '../ui/FiltersPanel';
+import { FilterPanelEvents } from '../ui/panels/FiltersPanel';
 
 export class FilterManager extends Manager<Filter> {
     private static self: FilterManager|null = null;

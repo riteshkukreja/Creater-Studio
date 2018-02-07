@@ -70,7 +70,7 @@ export class EventBus<T> implements IEventBus<T>, IEventMessageItem, IClonableIt
     }
 }
 
-export const StudioEventBus: EventBus<any> = new EventBus(IBusType.GLOBAL, true);
+export const StudioEventBus: EventBus<any> = new EventBus(IBusType.GLOBAL, false);
 export const FilterEventBus: EventBus<Filter> = new EventBus(IBusType.FILTER);
 export const LayerEventBus: EventBus<Filter> = new EventBus(IBusType.LAYER);
 export const ToolEventBus: EventBus<Filter> = new EventBus(IBusType.TOOL, true);

@@ -14,4 +14,8 @@ export class Position {
     angle(pos: Position): number {
         return Math.atan2(pos.y - this.y, pos.x - this.x);
     }
+
+    toString(): string {
+        return `[${this.x},${this.y}]`;
+    }
 }

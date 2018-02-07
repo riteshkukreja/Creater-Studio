@@ -13,10 +13,11 @@ import { Color } from "./components/Color";
 import { getRandomColor } from "./utils/Helper";
 import { ToolsPanel, ToolsPanelModule } from "./ui/panels/ToolsPanel";
 import { ToolManager } from "./managers/ToolManager";
-import { PaintTool } from "./components/PaintTool";
+import { PaintTool } from "./tools/PaintTool";
 import { EventBusManager } from "./managers/EventBusManager";
 import { StudioEventBus, LayerEventBus, ToolEventBus, FilterEventBus } from "./components/EventBus";
 import { BrushManager } from "./managers/BrushManager";
+import { BrushTool } from "./tools/BrushTool";
 
 try {
     /** Loader Started */
@@ -64,7 +65,12 @@ try {
     LayerManager.singleton().add(new Layer("background"));
 
     /**********************TOOLS*****************/
-    ToolManager.singleton().add(new PaintTool());
+    const brushTool = new BrushTool();
+    const paintTool = new PaintTool();
+    ToolManager.singleton().add(brushTool);
+    ToolManager.singleton().add(paintTool);
+
+    ToolManager.singleton().setSelected(brushTool.getId());
     
     /**********************BRUSHES*****************/
     BrushManager.singleton().add(RoundBrush);
@@ -74,6 +80,8 @@ try {
     BrushManager.singleton().add(FadedRoundBrush);
     BrushManager.singleton().add(DottedRoundBrush);
     BrushManager.singleton().add(RandomJitterBrush);
+
+    BrushManager.singleton().setSelected(RoundBrush.getId());
 
 
 

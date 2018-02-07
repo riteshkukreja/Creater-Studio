@@ -24,12 +24,8 @@ export class BrushManager extends Manager<Brush> {
         });
 
         StudioEventBus.subscribe(BrushManagerEvents.DRAW_BRUSH_END, (event: JQuery.Event, {position, context}) => {
-            this.lastPosition = null;
+            this.reset();
         });
-    }
-
-    add(brush: Brush): void {
-        super.add(brush);
     }
 
     public static singleton(): BrushManager {
@@ -75,11 +71,15 @@ export class BrushManager extends Manager<Brush> {
         }
     }
 
-    private drawBrush(position: Position, color: Color, context: CanvasRenderingContext2D): void {
+    public drawBrush(position: Position, color: Color, context: CanvasRenderingContext2D): void {
         if(this.selectedBrush !== null) {
             this.selectedBrush.draw(this.lastPosition, position, this.brushSize, color, context);
             this.lastPosition = position;
         }
+    }
+
+    public reset(): void {
+        this.lastPosition = null;
     }
 
 }
