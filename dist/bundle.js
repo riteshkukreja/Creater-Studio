@@ -10529,7 +10529,7 @@ var IBusType;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Helper_1 = __webpack_require__(6);
+const Helper_1 = __webpack_require__(7);
 const InvalidArgException_1 = __webpack_require__(4);
 const ItemNotFoundException_1 = __webpack_require__(16);
 const EventBus_1 = __webpack_require__(1);
@@ -10634,6 +10634,45 @@ exports.InvalidArgException = InvalidArgException;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+class Color {
+    constructor(r, g, b, a) {
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a || 1;
+    }
+    toString() {
+        return "rgba(" + this.red + "," + this.green + "," + this.blue + "," + (this.alpha) + ")";
+    }
+    clone() {
+        return new Color(this.red, this.green, this.blue, this.alpha);
+    }
+    get Red() {
+        return this.red;
+    }
+    get Blue() {
+        return this.blue;
+    }
+    get Green() {
+        return this.green;
+    }
+    get Alpha() {
+        return this.alpha;
+    }
+    set Alpha(alpha) {
+        this.alpha = alpha;
+    }
+}
+exports.Color = Color;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 class Position {
     constructor(x, y) {
         this.x = parseInt(x + '');
@@ -10653,7 +10692,7 @@ exports.Position = Position;
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10667,8 +10706,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const Position_1 = __webpack_require__(5);
-const Color_1 = __webpack_require__(7);
+const Position_1 = __webpack_require__(6);
+const Color_1 = __webpack_require__(5);
 const InvalidArgException_1 = __webpack_require__(4);
 /**
  * Map a value from one range to another
@@ -10876,45 +10915,6 @@ exports.CreateWorker = (url, data) => __awaiter(this, void 0, void 0, function* 
         };
     });
 });
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class Color {
-    constructor(r, g, b, a) {
-        this.red = r;
-        this.green = g;
-        this.blue = b;
-        this.alpha = a || 1;
-    }
-    toString() {
-        return "rgba(" + this.red + "," + this.green + "," + this.blue + "," + (this.alpha) + ")";
-    }
-    clone() {
-        return new Color(this.red, this.green, this.blue, this.alpha);
-    }
-    get Red() {
-        return this.red;
-    }
-    get Blue() {
-        return this.blue;
-    }
-    get Green() {
-        return this.green;
-    }
-    get Alpha() {
-        return this.alpha;
-    }
-    set Alpha(alpha) {
-        this.alpha = alpha;
-    }
-}
-exports.Color = Color;
 
 
 /***/ }),
@@ -29770,7 +29770,7 @@ var BrushManagerEvents;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Color_1 = __webpack_require__(7);
+const Color_1 = __webpack_require__(5);
 const ControlSwatch_1 = __webpack_require__(15);
 const $ = __webpack_require__(0);
 class ColorLoader extends ControlSwatch_1.ControlSwatch {
@@ -30195,7 +30195,7 @@ exports.ItemNotFoundException = ItemNotFoundException;
 Object.defineProperty(exports, "__esModule", { value: true });
 const EventBus_1 = __webpack_require__(1);
 const LayerManager_1 = __webpack_require__(13);
-const Position_1 = __webpack_require__(5);
+const Position_1 = __webpack_require__(6);
 const $ = __webpack_require__(0);
 const LayersPanel_1 = __webpack_require__(18);
 const FiltersPanel_1 = __webpack_require__(21);
@@ -31062,7 +31062,7 @@ const FiltersPanel_1 = __webpack_require__(21);
 const Panel_1 = __webpack_require__(28);
 const LayersPanel_1 = __webpack_require__(18);
 const Brush_1 = __webpack_require__(29);
-const Helper_1 = __webpack_require__(6);
+const Helper_1 = __webpack_require__(7);
 const ToolsPanel_1 = __webpack_require__(30);
 const ToolManager_1 = __webpack_require__(14);
 const PaintTool_1 = __webpack_require__(31);
@@ -31136,8 +31136,8 @@ catch (e) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const $ = __webpack_require__(0);
-const Color_1 = __webpack_require__(7);
-const Position_1 = __webpack_require__(5);
+const Color_1 = __webpack_require__(5);
+const Position_1 = __webpack_require__(6);
 const ControlSwatch_1 = __webpack_require__(15);
 const EventBus_1 = __webpack_require__(1);
 const BrushManager_1 = __webpack_require__(11);
@@ -31386,6 +31386,7 @@ __webpack_require__(10);
 class Panel {
     constructor(title) {
         this.boardId = "#currBoard";
+        this.subPanels = new Map();
         this.gid = title;
     }
     initiaize(parent) {
@@ -31399,23 +31400,38 @@ class Panel {
         this.holder.draggable({ scroll: false, handle: '.panel-handle', containment: this.boardId });
         parent.append(this.holder);
     }
+    updateActivatedContent(title, activate) {
+        /** active content html */
+        const cHTML = this.subPanels.get(title);
+        if (cHTML !== undefined) {
+            if (activate !== undefined && !activate)
+                cHTML.removeClass('active');
+            else
+                cHTML.addClass("active");
+        }
+    }
     addSubPanel(title) {
-        let tabHTML = $("<li/>");
+        let tabHTML = $("<li/>", { 'data-title': title });
         let contentHTML = $("<div/>", { class: 'tab-pane', id: `${this.gid}_${title}` });
-        let tabA = $("<a/>", { href: `#${this.gid}_${title}`, 'data-toggle': 'tab', text: title });
+        let tabA = $("<a/>", { 'data-toggle': 'tab', text: title });
         tabA.appendTo(tabHTML);
         this.navHolder.append(tabHTML);
         this.contentHolder.append(contentHTML);
         tabA.click(e => {
             if (this.selectedTab) {
                 this.selectedTab.removeClass("active");
+                const title = this.selectedTab.data('title');
+                this.updateActivatedContent(title, false);
             }
             this.selectedTab = tabHTML;
             this.selectedTab.addClass("active");
+            /** active content html */
+            this.updateActivatedContent(title, true);
         });
-        if (this.navHolder.length == 1) {
+        if (this.subPanels.size == 1) {
             this.navHolder.children().first().children().first().click();
         }
+        this.subPanels.set(title, contentHTML);
         return contentHTML;
     }
     getSubPanel(title) {
@@ -31462,8 +31478,8 @@ exports.ToolsWindow.moveTo(0, 100);
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Position_1 = __webpack_require__(5);
-const Helper_1 = __webpack_require__(6);
+const Position_1 = __webpack_require__(6);
+const Helper_1 = __webpack_require__(7);
 const EventMessageItem_1 = __webpack_require__(9);
 class Brush extends EventMessageItem_1.EventMessageItem {
     constructor(label, setupCallback, drawCallback) {
@@ -31720,7 +31736,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Tool_1 = __webpack_require__(22);
-const Helper_1 = __webpack_require__(6);
+const Helper_1 = __webpack_require__(7);
 const $ = __webpack_require__(0);
 class PaintTool extends Tool_1.Tool {
     constructor() {

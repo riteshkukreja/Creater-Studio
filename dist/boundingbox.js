@@ -71,8 +71,8 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Helper_1 = __webpack_require__(6);
-const Color_1 = __webpack_require__(7);
+const Helper_1 = __webpack_require__(7);
+const Color_1 = __webpack_require__(5);
 //const worker: Worker = <Worker> self;
 // Setup an event listener that will handle messages sent to the worker.
 self.addEventListener('message', function (e) {
@@ -117,6 +117,46 @@ exports.InvalidArgException = InvalidArgException;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+class Color {
+    constructor(r, g, b, a) {
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a || 1;
+    }
+    toString() {
+        return "rgba(" + this.red + "," + this.green + "," + this.blue + "," + (this.alpha) + ")";
+    }
+    clone() {
+        return new Color(this.red, this.green, this.blue, this.alpha);
+    }
+    get Red() {
+        return this.red;
+    }
+    get Blue() {
+        return this.blue;
+    }
+    get Green() {
+        return this.green;
+    }
+    get Alpha() {
+        return this.alpha;
+    }
+    set Alpha(alpha) {
+        this.alpha = alpha;
+    }
+}
+exports.Color = Color;
+
+
+/***/ }),
+
+/***/ 6:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 class Position {
     constructor(x, y) {
         this.x = parseInt(x + '');
@@ -137,7 +177,7 @@ exports.Position = Position;
 
 /***/ }),
 
-/***/ 6:
+/***/ 7:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -151,8 +191,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const Position_1 = __webpack_require__(5);
-const Color_1 = __webpack_require__(7);
+const Position_1 = __webpack_require__(6);
+const Color_1 = __webpack_require__(5);
 const InvalidArgException_1 = __webpack_require__(4);
 /**
  * Map a value from one range to another
@@ -360,46 +400,6 @@ exports.CreateWorker = (url, data) => __awaiter(this, void 0, void 0, function* 
         };
     });
 });
-
-
-/***/ }),
-
-/***/ 7:
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class Color {
-    constructor(r, g, b, a) {
-        this.red = r;
-        this.green = g;
-        this.blue = b;
-        this.alpha = a || 1;
-    }
-    toString() {
-        return "rgba(" + this.red + "," + this.green + "," + this.blue + "," + (this.alpha) + ")";
-    }
-    clone() {
-        return new Color(this.red, this.green, this.blue, this.alpha);
-    }
-    get Red() {
-        return this.red;
-    }
-    get Blue() {
-        return this.blue;
-    }
-    get Green() {
-        return this.green;
-    }
-    get Alpha() {
-        return this.alpha;
-    }
-    set Alpha(alpha) {
-        this.alpha = alpha;
-    }
-}
-exports.Color = Color;
 
 
 /***/ }),

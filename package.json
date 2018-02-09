@@ -18,9 +18,11 @@
     "webpack": "^3.10.0"
   },
   "dependencies": {
+    "bootstrap": "^4.0.0",
     "commonjs": "0.0.1",
     "jquery": "^3.3.1",
     "jquery-ui": "^1.12.1",
-    "jquery-ui-bundle": "^1.12.1-migrate"
+    "jquery-ui-bundle": "^1.12.1-migrate",
+    "popper.js": "^1.12.9"
   }
 }

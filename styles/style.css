@@ -368,9 +368,13 @@ input[type=range] {
 .panel .tab-content .tab-pane {
 	height: 100%;
 	width: 100%;
-	display: block;
+	display: none;
 	overflow-y: auto;
 	padding-bottom: 20px;
+}
+
+.panel .tab-content .tab-pane.active {
+	display: block;
 }
 
 .tab-pane .swatch-group {
